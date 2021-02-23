@@ -1,0 +1,30 @@
+{
+  "name": "outil-audio",
+  "version": "1.0.0",
+  "description": "Functions for audio manipulations behind Outil recorder tool",
+  "main": "handler.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/portikM/outil-audio.git"
+  },
+  "author": "Maksym Portianoi",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/portikM/outil-audio/issues"
+  },
+  "homepage": "https://github.com/portikM/outil-audio#readme",
+  "dependencies": {
+    "aws-sdk": "^2.829.0",
+    "fs": "0.0.1-security"
+  },
+  "devDependencies": {
+    "eslint": "^7.20.0",
+    "eslint-config-standard": "^16.0.2",
+    "eslint-plugin-import": "^2.22.1",
+    "eslint-plugin-node": "^11.1.0",
+    "eslint-plugin-promise": "^4.3.1"
+  }
+}
