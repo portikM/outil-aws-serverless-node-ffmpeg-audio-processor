@@ -39,6 +39,9 @@ provider:
           Action:
             - s3:PutObject
             - s3:PutObjectAcl
+            - s3:GetObject
+            - s3:GetObjectAcl
+            - s3:DeleteObject
           Resource: "arn:aws:s3:::${self:custom.outputBucket}/*"
         - Effect: Allow
           Action:
@@ -61,14 +64,14 @@ provider:
 #    - exclude-me-dir/**
 
 functions:
-  trimAndStash:
-    handler: audio-trim-stash/handler.trimAndStash
+  trimConcatStash:
+    handler: audio-stash/handler.trimConcatStash
     #    The following are a few example events you can configure
     #    NOTE: Please make sure to change your handler code to work with those events
     #    Check the event documentation for details
     events:
       - httpApi:
-          path: /trimAndStash
+          path: /stash
           method: get
     #      - websocket: $connect
     #      - s3: ${env:BUCKET}
