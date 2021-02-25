@@ -127,10 +127,12 @@ module.exports.trimConcatStash = async (event, context) => {
   await s3.putObject({
     Bucket: process.env.OUTPUT_BUCKET,
     Key: fileName,
-    Body: file
+    Body: file,
+    ContentType: 'audio/mpeg',
+    ACL: 'public-read'
   }).promise()
 
-  console.log('deleting original object from input bucket (wip)')
+  console.log('deleting original object from input bucket')
   // delete original object from input bucket
   await s3.deleteObject({
     Bucket: process.env.INPUT_BUCKET,
@@ -139,6 +141,6 @@ module.exports.trimConcatStash = async (event, context) => {
 
   return {
     statusCode: 200,
-    body: JSON.stringify({ message: 'success' })
+    body: JSON.stringify({ message: 'success', object_url: `https://${process.env.OUTPUT_BUCKET}.s3.ca-central-1.amazonaws.com/${fileName}` })
   }
 }
