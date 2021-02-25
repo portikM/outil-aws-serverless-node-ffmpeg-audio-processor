@@ -9,3 +9,7 @@ jspm_packages
 
 # layer builds
 layer
+
+# env files
+env.dev.yml
+env.prod.yml

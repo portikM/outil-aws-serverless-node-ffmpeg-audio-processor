@@ -26,10 +26,7 @@ provider:
   memorySize: 256
   region: ca-central-1
   lambdaHashingVersion: 20201221
-
-  # you can overwrite defaults here
-  #  stage: dev
-  #  region: us-east-1
+  stage: ${opt:stage, 'dev'}
 
   # you can add statements to the Lambda function's IAM Role here
   iam:
@@ -41,6 +38,7 @@ provider:
             - s3:PutObjectAcl
             - s3:GetObject
             - s3:GetObjectAcl
+            - s3:ListBucket
             - s3:DeleteObject
           Resource: "arn:aws:s3:::${self:custom.outputBucket}/*"
         - Effect: Allow
@@ -50,9 +48,10 @@ provider:
             - s3:DeleteObject
           Resource: "arn:aws:s3:::${self:custom.inputBucket}/*"
 
-# you can define service wide environment variables here
-#  environment:
-#    variable1: value1
+  # you can define service wide environment variables here
+  environment:
+    INPUT_BUCKET: ${self:custom.inputBucket}
+    OUTPUT_BUCKET: ${self:custom.outputBucket}
 
 # you can add packaging information here
 #package:
@@ -73,6 +72,7 @@ functions:
       - httpApi:
           path: /stash
           method: get
+    timeout: 28
     #      - websocket: $connect
     #      - s3: ${env:BUCKET}
     #      - schedule: rate(10 minutes)
@@ -124,5 +124,5 @@ layers:
     path: layer
 
 custom:
-  inputBucket: outil-input-audio
-  outputBucket: outil-output-audio
+  inputBucket: ${file(env.${opt:stage, 'dev'}.yml):INPUT_BUCKET}
+  outputBucket: ${file(env.${opt:stage, 'dev'}.yml):OUTPUT_BUCKET}
