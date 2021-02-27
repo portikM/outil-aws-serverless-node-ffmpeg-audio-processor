@@ -6,17 +6,7 @@ const { promisify } = require('util')
 const s3 = new AWS.S3()
 const asyncWriteFile = promisify(writeFile)
 
-function checkS3 (key) {
-  return new Promise((resolve, reject) => {
-    s3.headObject({ Bucket: process.env.OUTPUT_BUCKET, Key: key }, (err, metadata) => {
-      if (err && ['NotFound', 'Forbidden'].indexOf(err.code) > -1) return resolve()
-      else if (err)
-        return reject(err)
-
-      return resolve(metadata)
-    })
-  })
-}
+const { checkS3 } = require('./../utils/checkS3/index')
 
 module.exports.trimConcatStash = async (event, context) => {
   const eventBody = JSON.parse(event.body)
@@ -42,6 +32,13 @@ module.exports.trimConcatStash = async (event, context) => {
       Key: fileName
     })
     .promise()
+    .catch(error => {
+      console.log('error ocurred when getting original file:', error)
+      return {
+        statusCode: 404,
+        body: JSON.stringify({ message: 'file not found' })
+      }
+    })
 
   // write file to tmp folder
   writeFileSync(needsTrimming ? '/tmp/original.mp3' : '/tmp/output.mp3', s3Object.Body)
@@ -70,7 +67,7 @@ module.exports.trimConcatStash = async (event, context) => {
   let resultFilePath = '/tmp/output.mp3'
 
   // check if recording already exists
-  const needsConcat = await checkS3(fileName)
+  const needsConcat = await checkS3(process.env.OUTPUT_BUCKET, fileName)
 
   if (needsConcat) {
     console.log('getting pt1 file')
