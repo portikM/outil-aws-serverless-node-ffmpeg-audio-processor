@@ -11,6 +11,8 @@ provider:
   region: ca-central-1
   lambdaHashingVersion: 20201221
   stage: ${opt:stage, 'dev'}
+  httpApi:
+    cors: true
 
   iam:
     role:
@@ -26,6 +28,7 @@ provider:
           Resource: "arn:aws:s3:::${self:custom.outputBucket}/*"
         - Effect: Allow
           Action:
+            - s3:PutObject
             - s3:GetObject
             - s3:GetObjectAcl
             - s3:DeleteObject
@@ -51,7 +54,7 @@ functions:
     events:
       - httpApi:
           path: /stash
-          method: get
+          method: post
     timeout: 28
     layers:
       - { Ref: FfmpegLambdaLayer }
@@ -63,14 +66,27 @@ functions:
           batchSize: 1
       - httpApi:
           path: /delete
-          method: get
-  queueS3Object:
+          method: post
+  s3InputBucketQueue:
+    handler: queue-s3-object/handler.queueS3Object
+    events:
+      - s3:
+          bucket: ${self:custom.inputBucket}
+          event: s3:ObjectCreated:*
+          existing: true
+  s3OutputBucketQueue:
     handler: queue-s3-object/handler.queueS3Object
     events:
       - s3:
           bucket: ${self:custom.outputBucket}
           event: s3:ObjectCreated:*
           existing: true
+  getUploadUrl:
+    handler: get-upload-url/handler.getSignedUrl
+    events:
+      - httpApi:
+          path: /upload
+          method: get
 
 
 resources:
@@ -79,7 +95,17 @@ resources:
       Type: AWS::SQS::Queue
       Properties:
         QueueName: ${self:custom.checkS3Queue.name}
-
+    Input:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: ${self:custom.inputBucket}
+        CorsConfiguration:
+          CorsRules:
+            - AllowedHeaders: ['*']
+              AllowedMethods: [GET, PUT]
+              AllowedOrigins: ['*']
+              Id: CORSRuleId1
+              MaxAge: '3600'
 
 layers:
   ffmpeg:
