@@ -18,7 +18,8 @@ module.exports.getSignedUrl = async event => {
     // issue signed url
     const url = await s3.getSignedUrl('putObject', {
       Bucket: process.env.INPUT_BUCKET,
-      Key: fileName
+      Key: fileName,
+      ACL: 'public-read'
     })
 
     return {

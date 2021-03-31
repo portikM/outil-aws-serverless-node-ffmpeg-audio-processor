@@ -1,47 +1,28 @@
 const AWS = require('aws-sdk')
+const moment = require('moment')
 
-const s3 = new AWS.S3()
+const sqs = new AWS.SQS()
 
-const { checkS3 } = require('./../utils/checkS3/index')
+const { listS3 } = require('./../utils/listS3/index')
 
-module.exports.checkAndEmptyS3 = async (event, context) => {
-  let object = null
-  let invokedFromHttp = false
+const currentTime = moment(new Date())
 
-  if (event.Records)
-    object = JSON.parse(event.Records[0].body)
-  else {
-    const eventBody = JSON.parse(event.body)
-    object = { bucket: process.env.OUTPUT_BUCKET, key: eventBody.file_name }
-    invokedFromHttp = true
-  }
+module.exports.checkAndEmptyS3 = async (event, context, callback) => {
+  console.log('getting objects in buckets')
+  // get objects in buckets
+  const objects = [...await listS3({ Bucket: process.env.INPUT_BUCKET }), ...await listS3({ Bucket: process.env.OUTPUT_BUCKET })]
+  console.log('objects found: ', objects.length)
 
-  const { bucket, key } = object
+  // queue objects which were updated more than 3 hours ago for deletion
+  const queue = []
+  if (objects.length)
+    objects.map((object) => {
+      if (currentTime.diff(moment(object.LastModified), 'hours') > 3)
+        queue.push(sqs.sendMessage({ QueueUrl: process.env.CHECK_S3_QUEUE_URL, MessageBody: JSON.stringify({ bucket: object.Bucket, key: object.Key }) }).promise())
+    })
 
-  console.log('checking if object exists in bucket')
-  // check if object exists in bucket
-  const objectExists = await checkS3(bucket, key)
-
-  let httpResponse = null
-
-  if (objectExists) {
-    console.log('deleting object from bucket')
-    // delete object from bucket
-    await s3.deleteObject({
-      Bucket: bucket,
-      Key: key
-    }).promise()
-    if (invokedFromHttp) httpResponse = {
-      statusCode: 200,
-      body: JSON.stringify({ message: 'success' })
-    }
-  } else {
-    console.log('object not found')
-    if (invokedFromHttp) httpResponse = {
-      statusCode: 404,
-      body: JSON.stringify({ message: 'file not found' })
-    }
-  }
-
-  if (httpResponse) return httpResponse
+  console.log('objects queued for deletion: ', queue.length)
+  // execute queue
+  if (queue.length)
+    return Promise.all(queue)
 }

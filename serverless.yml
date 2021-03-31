@@ -1,8 +1,6 @@
 service: outil-audio
 
-
 frameworkVersion: "2"
-
 
 provider:
   name: aws
@@ -32,7 +30,16 @@ provider:
             - s3:GetObject
             - s3:GetObjectAcl
             - s3:DeleteObject
+            - s3:ListBucket
           Resource: "arn:aws:s3:::${self:custom.inputBucket}/*"
+        - Effect: Allow
+          Action:
+            - s3:ListBucket
+          Resource: "arn:aws:s3:::${self:custom.inputBucket}"
+        - Effect: Allow
+          Action:
+            - s3:ListBucket
+          Resource: "arn:aws:s3:::${self:custom.outputBucket}"
         - Effect: Allow
           Action:
             - sqs:SendMessage
@@ -47,8 +54,13 @@ provider:
     OUTPUT_BUCKET: ${self:custom.outputBucket}
     CHECK_S3_QUEUE_URL: ${self:custom.checkS3Queue.url}
 
-
 functions:
+  getUploadUrl:
+    handler: get-upload-url/handler.getSignedUrl
+    events:
+      - httpApi:
+          path: /upload
+          method: get
   trimConcatStash:
     handler: audio-stash/handler.trimConcatStash
     events:
@@ -58,8 +70,8 @@ functions:
     timeout: 28
     layers:
       - { Ref: FfmpegLambdaLayer }
-  checkAndEmptyS3:
-    handler: check-empty-s3/handler.checkAndEmptyS3
+  deleteS3Object:
+    handler: delete-s3-object/handler.deleteS3Object
     events:
       - sqs:
           arn: ${self:custom.checkS3Queue.arn}
@@ -67,27 +79,10 @@ functions:
       - httpApi:
           path: /delete
           method: post
-  s3InputBucketQueue:
-    handler: queue-s3-object/handler.queueS3Object
+  checkAndEmptyS3:
+    handler: check-empty-s3/handler.checkAndEmptyS3
     events:
-      - s3:
-          bucket: ${self:custom.inputBucket}
-          event: s3:ObjectCreated:*
-          existing: true
-  s3OutputBucketQueue:
-    handler: queue-s3-object/handler.queueS3Object
-    events:
-      - s3:
-          bucket: ${self:custom.outputBucket}
-          event: s3:ObjectCreated:*
-          existing: true
-  getUploadUrl:
-    handler: get-upload-url/handler.getSignedUrl
-    events:
-      - httpApi:
-          path: /upload
-          method: get
-
+      - schedule: rate(12 hours)
 
 resources:
   Resources:
@@ -101,16 +96,15 @@ resources:
         BucketName: ${self:custom.inputBucket}
         CorsConfiguration:
           CorsRules:
-            - AllowedHeaders: ['*']
+            - AllowedHeaders: ["*"]
               AllowedMethods: [GET, PUT]
-              AllowedOrigins: ['*']
+              AllowedOrigins: ["*"]
               Id: CORSRuleId1
-              MaxAge: '3600'
+              MaxAge: "3600"
 
 layers:
   ffmpeg:
     path: layer
-
 
 custom:
   inputBucket: ${file(env.${opt:stage, 'dev'}.yml):INPUT_BUCKET}

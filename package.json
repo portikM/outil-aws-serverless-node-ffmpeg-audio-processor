@@ -18,7 +18,8 @@
   "homepage": "https://github.com/portikM/outil-audio#readme",
   "dependencies": {
     "aws-sdk": "^2.829.0",
-    "fs": "0.0.1-security"
+    "fs": "0.0.1-security",
+    "moment": "^2.29.1"
   },
   "devDependencies": {
     "eslint": "^7.20.0",
