@@ -61,11 +61,20 @@ functions:
       - httpApi:
           path: /upload
           method: get
-  trimConcatStash:
-    handler: audio-stash/handler.trimConcatStash
+  concatStash:
+    handler: audio-stash/handler.concatStash
     events:
       - httpApi:
           path: /stash
+          method: post
+    timeout: 28
+    layers:
+      - { Ref: FfmpegLambdaLayer }
+  trim:
+    handler: audio-trim/handler.trim
+    events:
+      - httpApi:
+          path: /trim
           method: post
     timeout: 28
     layers:

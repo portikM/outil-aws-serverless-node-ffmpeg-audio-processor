@@ -8,7 +8,7 @@ const asyncWriteFile = promisify(writeFile)
 
 const { checkS3 } = require('./../utils/checkS3/index')
 
-module.exports.trimConcatStash = async (event, context) => {
+module.exports.concatStash = async (event, context) => {
   const eventBody = JSON.parse(event.body)
   const fileName = eventBody.file_name
 
@@ -19,10 +19,6 @@ module.exports.trimConcatStash = async (event, context) => {
       body: JSON.stringify({ message: 'file name required!' })
     }
   }
-
-  const needsTrimming = typeof eventBody.trim_start !== 'undefined' && typeof eventBody.trim_length !== 'undefined'
-  let trimOptions = {}
-  if (needsTrimming) trimOptions = { start: eventBody.trim_start, length: eventBody.trim_length }
 
   try {
     console.log('getting the file')
@@ -46,7 +42,7 @@ module.exports.trimConcatStash = async (event, context) => {
         '/tmp/unencoded.mp3',
         '-acodec',
         'libmp3lame',
-      `${needsTrimming ? '/tmp/original.mp3' : '/tmp/output.mp3'}`
+        '/tmp/output.mp3'
       ],
       { stdio: 'inherit' }
     )
@@ -54,33 +50,13 @@ module.exports.trimConcatStash = async (event, context) => {
     // delete unencoded file
     unlinkSync('/tmp/unencoded.mp3')
 
-    if (needsTrimming)
-    // crop
-      spawnSync(
-        '/opt/ffmpeg/ffmpeg',
-        [
-          '-ss',
-        `${trimOptions.start}`,
-        '-t',
-        `${trimOptions.length}`,
-        '-i',
-        '/tmp/original.mp3',
-        '-acodec',
-        'copy',
-        '/tmp/output.mp3'
-        ],
-        { stdio: 'inherit' }
-      )
-
-    // delete the temp files
-    if (needsTrimming) unlinkSync('/tmp/original.mp3')
-
     let resultFilePath = '/tmp/output.mp3'
 
-    // check if recording already exists
+    // check if recording needs to be concatenated
     const needsConcat = await checkS3(process.env.OUTPUT_BUCKET, fileName)
 
     if (needsConcat) {
+      console.log('concatenating recordings')
       console.log('getting pt1 file')
       // get pt1 file
       const Pt1s3Object = await s3
@@ -100,7 +76,7 @@ module.exports.trimConcatStash = async (event, context) => {
           console.log(err)
       })
 
-      // concat
+      // concatenate
       spawnSync(
         '/opt/ffmpeg/ffmpeg',
         [
@@ -149,7 +125,7 @@ module.exports.trimConcatStash = async (event, context) => {
 
     return {
       statusCode: 200,
-      body: JSON.stringify({ message: 'success', object_url: `https://${process.env.OUTPUT_BUCKET}.s3.ca-central-1.amazonaws.com/${fileName}` })
+      body: JSON.stringify({ message: 'success', recording_url: `https://${process.env.OUTPUT_BUCKET}.s3.ca-central-1.amazonaws.com/${fileName}` })
     }
   } catch (error) {
     console.log('error ocurred:', error)
