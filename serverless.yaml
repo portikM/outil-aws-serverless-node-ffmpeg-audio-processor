@@ -17,3 +17,13 @@ functions:
       - http:
           method: any
           path: /{any+}
+
+resources:
+  Resources:
+    S3Bucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: ${self:custom.inputBucket}
+
+custom:
+  inputBucket: ${file(env.yml):INPUT_BUCKET}-${opt:stage, 'dev'}
