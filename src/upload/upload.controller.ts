@@ -6,7 +6,7 @@ import {
   Query,
 } from '@nestjs/common';
 import { UploadService } from './upload.service';
-import { GetUploadUrlDto } from '../dto/get-upload-url-dto.dto';
+import { GetUploadUrlDto } from './dto/get-upload-url-dto.dto';
 
 @Controller('upload')
 export class UploadController {

@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { S3 } from 'aws-sdk';
+const fs = require('fs').promises;
 
 @Injectable()
 export class StorageService {
@@ -7,13 +8,56 @@ export class StorageService {
     return new S3();
   }
 
-  async getSignedURL(key: string): Promise<string> {
+  getSignedURL(mediaType: string, key: string): string {
     const s3 = this.getS3();
-    const url = await s3.getSignedUrl('putObject', {
+    const extension = mediaType === 'audio' ? '.mp3' : '.mp4';
+    return s3.getSignedUrl('putObject', {
       Bucket: process.env.INPUT_BUCKET,
-      Key: key,
+      Key: `${mediaType}/${key + extension}`,
     });
+  }
 
-    return url;
+  getObject(mediaType: string, key: string) {
+    const s3 = this.getS3();
+    const extension = mediaType === 'audio' ? '.mp3' : '.mp4';
+    return new Promise((resolve, reject) => {
+      s3.getObject(
+        {
+          Bucket: process.env.INPUT_BUCKET as string,
+          Key: `${mediaType}/${key + extension}`,
+        },
+        (err, data) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(data.Body);
+          }
+        },
+      );
+    });
+  }
+
+  async putObject(mediaType: string, key: string, path: string) {
+    const s3 = this.getS3();
+    const extension = mediaType === 'audio' ? '.mp3' : '.mp4';
+    const body = await fs.readFile(path);
+    return new Promise((resolve, reject) => {
+      s3.putObject(
+        {
+          Bucket: process.env.INPUT_BUCKET as string,
+          Key: `${mediaType}-output/${key + extension}`,
+          Body: body,
+          ContentType: 'audio/mpeg',
+          ACL: 'public-read',
+        },
+        (err, data) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(data);
+          }
+        },
+      );
+    });
   }
 }
