@@ -9,6 +9,20 @@ provider:
   name: aws
   runtime: nodejs14.x
   region: ca-central-1
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - s3:PutObject
+            - s3:GetObject
+          Resource: 'arn:aws:s3:::${self:custom.inputBucket}/*'
+        - Effect: Allow
+          Action:
+            - s3:PutObject
+            - s3:PutObjectAcl
+            - s3:GetObject
+          Resource: 'arn:aws:s3:::${self:custom.outputBucket}/*'
 
 functions:
   main:
@@ -17,13 +31,20 @@ functions:
       - http:
           method: any
           path: /{any+}
+    layers:
+      - !Sub arn:aws:lambda:ca-central-1:${AWS::AccountId}:layer:ffmpeg:1
 
 resources:
   Resources:
-    S3Bucket:
+    S3InputBucket:
       Type: AWS::S3::Bucket
       Properties:
         BucketName: ${self:custom.inputBucket}
+    S3OutputBucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: ${self:custom.outputBucket}
 
 custom:
   inputBucket: ${file(env.yml):INPUT_BUCKET}-${opt:stage, 'dev'}
+  outputBucket: ${file(env.yml):OUTPUT_BUCKET}-${opt:stage, 'dev'}

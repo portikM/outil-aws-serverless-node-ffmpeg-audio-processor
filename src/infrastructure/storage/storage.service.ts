@@ -1,6 +1,7 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { S3 } from 'aws-sdk';
-const fs = require('fs').promises;
+import { MediaTypesEnum } from '../../common/enums/media-types.enum';
+import { promises as fs } from 'fs';
 
 @Injectable()
 export class StorageService {
@@ -10,7 +11,7 @@ export class StorageService {
 
   getSignedURL(mediaType: string, key: string): string {
     const s3 = this.getS3();
-    const extension = mediaType === 'audio' ? '.mp3' : '.mp4';
+    const extension = mediaType === MediaTypesEnum.AUDIO ? '.mp3' : '.mp4';
     return s3.getSignedUrl('putObject', {
       Bucket: process.env.INPUT_BUCKET,
       Key: `${mediaType}/${key + extension}`,
@@ -19,7 +20,7 @@ export class StorageService {
 
   getObject(mediaType: string, key: string) {
     const s3 = this.getS3();
-    const extension = mediaType === 'audio' ? '.mp3' : '.mp4';
+    const extension = mediaType === MediaTypesEnum.AUDIO ? '.mp3' : '.mp4';
     return new Promise((resolve, reject) => {
       s3.getObject(
         {
@@ -39,15 +40,22 @@ export class StorageService {
 
   async putObject(mediaType: string, key: string, path: string) {
     const s3 = this.getS3();
-    const extension = mediaType === 'audio' ? '.mp3' : '.mp4';
+    const extension = mediaType === MediaTypesEnum.AUDIO ? '.mp3' : '.mp4';
+    const contentType =
+      mediaType === MediaTypesEnum.AUDIO ? 'audio/mpeg' : 'video/mp4';
     const body = await fs.readFile(path);
+
+    if (!body) {
+      throw new NotFoundException('Audio file not found in temp folder');
+    }
+
     return new Promise((resolve, reject) => {
       s3.putObject(
         {
-          Bucket: process.env.INPUT_BUCKET as string,
-          Key: `${mediaType}-output/${key + extension}`,
+          Bucket: process.env.OUTPUT_BUCKET as string,
+          Key: `${mediaType}/${key + extension}`,
           Body: body,
-          ContentType: 'audio/mpeg',
+          ContentType: contentType,
           ACL: 'public-read',
         },
         (err, data) => {

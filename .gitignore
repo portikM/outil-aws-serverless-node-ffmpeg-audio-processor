@@ -41,6 +41,3 @@ lerna-debug.log*
 # envarinment variables
 .env
 env.yml
-
-# layer builds
-layer
