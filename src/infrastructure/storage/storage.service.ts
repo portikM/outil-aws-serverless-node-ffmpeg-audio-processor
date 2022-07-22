@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { S3 } from 'aws-sdk';
 import { MediaTypesEnum } from '../../common/enums/media-types.enum';
 import { promises as fs } from 'fs';
@@ -18,13 +18,13 @@ export class StorageService {
     });
   }
 
-  getObject(mediaType: string, key: string) {
+  getObject(mediaType: string, key: string, bucket?: string) {
     const s3 = this.getS3();
     const extension = mediaType === MediaTypesEnum.AUDIO ? '.mp3' : '.mp4';
     return new Promise((resolve, reject) => {
       s3.getObject(
         {
-          Bucket: process.env.INPUT_BUCKET as string,
+          Bucket: bucket || (process.env.INPUT_BUCKET as string),
           Key: `${mediaType}/${key + extension}`,
         },
         (err, data) => {
@@ -43,10 +43,13 @@ export class StorageService {
     const extension = mediaType === MediaTypesEnum.AUDIO ? '.mp3' : '.mp4';
     const contentType =
       mediaType === MediaTypesEnum.AUDIO ? 'audio/mpeg' : 'video/mp4';
-    const body = await fs.readFile(path);
 
-    if (!body) {
-      throw new NotFoundException('Audio file not found in temp folder');
+    let body: Buffer;
+    try {
+      body = await fs.readFile(path);
+    } catch (error) {
+      console.log(error);
+      throw new InternalServerErrorException('Error saving output file');
     }
 
     return new Promise((resolve, reject) => {

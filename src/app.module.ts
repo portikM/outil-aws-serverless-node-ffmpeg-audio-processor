@@ -3,12 +3,14 @@ import { ConfigModule } from '@nestjs/config';
 import { InfrastructureModule } from './infrastructure/infrastructure.module';
 import { UploadController } from './upload/upload.controller';
 import { UploadService } from './upload/upload.service';
-import { TrimService } from './trim/trim.service';
 import { TrimController } from './trim/trim.controller';
+import { TrimService } from './trim/trim.service';
+import { ConcatController } from './concat/concat.controller';
+import { ConcatService } from './concat/concat.service';
 
 @Module({
   imports: [InfrastructureModule, ConfigModule.forRoot()],
-  controllers: [UploadController, TrimController],
-  providers: [UploadService, TrimService],
+  controllers: [UploadController, TrimController, ConcatController],
+  providers: [UploadService, TrimService, ConcatService],
 })
 export class AppModule {}

@@ -23,6 +23,14 @@ provider:
             - s3:PutObjectAcl
             - s3:GetObject
           Resource: 'arn:aws:s3:::${self:custom.outputBucket}/*'
+        - Effect: Allow
+          Action:
+            - s3:ListBucket
+          Resource: 'arn:aws:s3:::${self:custom.inputBucket}'
+        - Effect: Allow
+          Action:
+            - s3:ListBucket
+          Resource: 'arn:aws:s3:::${self:custom.outputBucket}'
 
 functions:
   main:

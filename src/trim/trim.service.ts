@@ -55,6 +55,7 @@ export class TrimService {
           `/tmp/${trimAudioDto.key}.mp3`,
           '-acodec',
           'copy',
+          '-y',
           outputFile,
         ],
         { stdio: 'inherit' },
