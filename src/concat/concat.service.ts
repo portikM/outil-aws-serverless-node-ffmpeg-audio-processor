@@ -35,6 +35,7 @@ export class ConcatService {
     }
 
     // save part 1 file to temp folder
+    // part 1 files doesn't need to be encoded because it was already encoded in trim service
     await fs.writeFile('/tmp/pt1.mp3', pt1 as Buffer);
 
     // get part 2 audio file from storage
@@ -56,7 +57,25 @@ export class ConcatService {
     }
 
     // save part 2 file to temp folder
-    await fs.writeFile('/tmp/pt2.mp3', pt2 as Buffer);
+    await fs.writeFile('/tmp/pt2-unencoded.mp3', pt2 as Buffer);
+
+    // encode part 2 file
+    spawnSync(
+      '/opt/bin/ffmpeg',
+      [
+        '-i',
+        '/tmp/pt2-unencoded.mp3',
+        '-acodec',
+        'libmp3lame',
+        '-ar',
+        '44100',
+        '-y',
+        '/tmp/pt2.mp3',
+      ],
+      {
+        stdio: 'inherit',
+      },
+    );
 
     // create list of files to concat
     await fs.writeFile(
@@ -74,8 +93,6 @@ export class ConcatService {
         '0',
         '-i',
         '/tmp/list.txt',
-        '-c',
-        'copy',
         '-y',
         `/tmp/${concatAudioDto.key}.mp3`,
       ],

@@ -34,7 +34,25 @@ export class TrimService {
     }
 
     // save file to temp folder
-    await fs.writeFile(`/tmp/${trimAudioDto.key}.mp3`, file as Buffer);
+    await fs.writeFile('/tmp/unencoded.mp3', file as Buffer);
+
+    // encode audio file
+    spawnSync(
+      '/opt/bin/ffmpeg',
+      [
+        '-i',
+        '/tmp/unencoded.mp3',
+        '-acodec',
+        'libmp3lame',
+        '-ar',
+        '44100',
+        '-y',
+        `/tmp/${trimAudioDto.key}.mp3`,
+      ],
+      {
+        stdio: 'inherit',
+      },
+    );
 
     // if file needs to be trimmed, trim it.. (c) Jason Statham
     let outputFile = `/tmp/${trimAudioDto.key}.mp3`;
@@ -42,7 +60,7 @@ export class TrimService {
       trimAudioDto.trimStart !== undefined &&
       trimAudioDto.trimLength !== undefined;
     if (needsTrimming) {
-      outputFile = '/tmp/output.mp3';
+      outputFile = '/tmp/trimmed.mp3';
 
       spawnSync(
         '/opt/bin/ffmpeg',
@@ -53,8 +71,6 @@ export class TrimService {
           `${trimAudioDto.trimLength}`,
           '-i',
           `/tmp/${trimAudioDto.key}.mp3`,
-          '-acodec',
-          'copy',
           '-y',
           outputFile,
         ],
