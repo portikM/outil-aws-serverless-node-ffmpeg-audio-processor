@@ -38,7 +38,7 @@ export class StorageService {
     });
   }
 
-  async putObject(mediaType: string, key: string, path: string) {
+  async putObject(mediaType: string, key: string, path: string): Promise<void> {
     const s3 = this.getS3();
     const extension = mediaType === MediaTypesEnum.AUDIO ? '.mp3' : '.mp4';
     const contentType =
@@ -52,7 +52,7 @@ export class StorageService {
       throw new InternalServerErrorException('Error saving output file');
     }
 
-    return new Promise((resolve, reject) => {
+    return new Promise<void>((resolve, reject) => {
       s3.putObject(
         {
           Bucket: process.env.OUTPUT_BUCKET as string,
@@ -60,6 +60,28 @@ export class StorageService {
           Body: body,
           ContentType: contentType,
           ACL: 'public-read',
+        },
+        (err, _data) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve();
+          }
+        },
+      );
+    });
+  }
+
+  async listObjects(
+    bucket: string,
+    folder: string,
+  ): Promise<S3.ListObjectsV2Output> {
+    const s3 = this.getS3();
+    return new Promise((resolve, reject) => {
+      s3.listObjectsV2(
+        {
+          Bucket: bucket,
+          Prefix: folder,
         },
         (err, data) => {
           if (err) {

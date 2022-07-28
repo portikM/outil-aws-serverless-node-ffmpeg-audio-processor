@@ -6,6 +6,8 @@
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
+    "serverless-offline": "sls offline start --aws-profile default",
+    "deploy-dev": "sls deploy --stage dev --aws-profile default",
     "prebuild": "rimraf dist",
     "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
@@ -30,6 +32,7 @@
     "class-transformer": "^0.5.1",
     "class-validator": "^0.13.2",
     "fs": "^0.0.1-security",
+    "moment": "^2.29.4",
     "reflect-metadata": "^0.1.13",
     "rimraf": "^3.0.2",
     "rxjs": "^7.2.0"

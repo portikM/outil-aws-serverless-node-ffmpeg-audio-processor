@@ -34,13 +34,17 @@ provider:
 
 functions:
   main:
-    handler: src/lambda.handler
+    handler: src/lambda.main.handler
     events:
       - http:
           method: any
           path: /{any+}
     layers:
       - !Sub arn:aws:lambda:ca-central-1:${AWS::AccountId}:layer:ffmpeg:1
+  listStorage:
+    handler: src/lambda.listStorage.handler
+    events:
+      - schedule: rate(1 minute)
 
 resources:
   Resources:

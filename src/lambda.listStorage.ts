@@ -1,12 +1,16 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
 import { Handler, Context } from 'aws-lambda';
 import { Server } from 'http';
-import { createServer, proxy } from 'aws-serverless-express';
+import { createServer } from 'aws-serverless-express';
 import { eventContext } from 'aws-serverless-express/middleware';
 
 import { NestFactory } from '@nestjs/core';
 import { ExpressAdapter } from '@nestjs/platform-express';
 import { AppModule } from './app.module';
+
+import { INestApplication } from '@nestjs/common';
+
+import { ListStorageService } from './list-storage/list-storage.service';
 
 const express = require('express');
 
@@ -17,11 +21,12 @@ const express = require('express');
 const binaryMimeTypes: string[] = [];
 
 let cachedServer: Server;
+let nestApp: INestApplication;
 
 async function bootstrapServer(): Promise<Server> {
   if (!cachedServer) {
     const expressApp = express();
-    const nestApp = await NestFactory.create(
+    nestApp = await NestFactory.create(
       AppModule,
       new ExpressAdapter(expressApp),
     );
@@ -34,5 +39,7 @@ async function bootstrapServer(): Promise<Server> {
 
 export const handler: Handler = async (event: any, context: Context) => {
   cachedServer = await bootstrapServer();
-  return proxy(cachedServer, event, context, 'PROMISE').promise;
+  const listStorageService = nestApp.get(ListStorageService);
+
+  await listStorageService.listStorage();
 };
