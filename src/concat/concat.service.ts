@@ -9,6 +9,7 @@ import { ConcatAudioDto } from './dto/concat-audio.dto';
 import { MediaTypesEnum } from '../common/enums/media-types.enum';
 import { promises as fs } from 'fs';
 const { spawnSync } = require('child_process');
+import { S3NotFoundException } from '../common/s3-not-found.exception';
 
 @Injectable()
 export class ConcatService {
@@ -24,7 +25,7 @@ export class ConcatService {
         process.env.OUTPUT_BUCKET as string,
       );
     } catch (error) {
-      if (error.statusCode && error.statusCode === 404) {
+      if (error instanceof S3NotFoundException) {
         throw new NotFoundException('Audio file (1) not found');
       } else {
         console.log(error);
@@ -46,7 +47,7 @@ export class ConcatService {
         concatAudioDto.key,
       );
     } catch (error) {
-      if (error.statusCode && error.statusCode === 404) {
+      if (error instanceof S3NotFoundException) {
         throw new NotFoundException('Audio file (2) not found');
       } else {
         console.log(error);

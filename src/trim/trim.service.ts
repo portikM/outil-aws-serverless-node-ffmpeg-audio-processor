@@ -9,6 +9,7 @@ import { TrimAudioDto } from './dto/trim-audio.dto';
 import { MediaTypesEnum } from '../common/enums/media-types.enum';
 import { promises as fs } from 'fs';
 const { spawnSync } = require('child_process');
+import { S3NotFoundException } from '../common/s3-not-found.exception';
 
 @Injectable()
 export class TrimService {
@@ -23,7 +24,7 @@ export class TrimService {
         trimAudioDto.key,
       );
     } catch (error) {
-      if (error.statusCode && error.statusCode === 404) {
+      if (error instanceof S3NotFoundException) {
         throw new NotFoundException('Audio file not found');
       } else {
         console.log(error);

@@ -2,6 +2,7 @@ import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { S3 } from 'aws-sdk';
 import { MediaTypesEnum } from '../../common/enums/media-types.enum';
 import { promises as fs } from 'fs';
+import { S3NotFoundException } from '../../common/s3-not-found.exception';
 
 @Injectable()
 export class StorageService {
@@ -15,6 +16,7 @@ export class StorageService {
     return s3.getSignedUrl('putObject', {
       Bucket: process.env.INPUT_BUCKET,
       Key: `${mediaType}/${key + extension}`,
+      Expires: 3600,
     });
   }
 
@@ -29,6 +31,9 @@ export class StorageService {
         },
         (err, data) => {
           if (err) {
+            if (err.statusCode === 404) {
+              reject(new S3NotFoundException());
+            }
             reject(err);
           } else {
             resolve(data.Body);

@@ -9,7 +9,7 @@ import {
 export class TrimAudioDto {
   @IsNotEmpty()
   @IsString()
-  key: string;
+  key!: string;
 
   @IsOptional()
   @IsNumber()
