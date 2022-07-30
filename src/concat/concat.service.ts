@@ -11,6 +11,8 @@ import { promises as fs } from 'fs';
 const { spawnSync } = require('child_process');
 import { S3NotFoundException } from '../common/s3-not-found.exception';
 
+const { OUTPUT_BUCKET = '' } = process.env;
+
 @Injectable()
 export class ConcatService {
   constructor(private storageService: StorageService) {}
@@ -22,7 +24,7 @@ export class ConcatService {
       pt1 = await this.storageService.getObject(
         MediaTypesEnum.AUDIO,
         concatAudioDto.key,
-        process.env.OUTPUT_BUCKET as string,
+        OUTPUT_BUCKET,
       );
     } catch (error) {
       if (error instanceof S3NotFoundException) {
@@ -107,6 +109,6 @@ export class ConcatService {
       `/tmp/${concatAudioDto.key}.mp3`,
     );
 
-    return `https://${process.env.OUTPUT_BUCKET}.s3.ca-central-1.amazonaws.com/audio/${concatAudioDto.key}.mp3`;
+    return `https://${OUTPUT_BUCKET}.s3.ca-central-1.amazonaws.com/audio/${concatAudioDto.key}.mp3`;
   }
 }

@@ -4,6 +4,8 @@ import { MediaTypesEnum } from '../../common/enums/media-types.enum';
 import { promises as fs } from 'fs';
 import { S3NotFoundException } from '../../common/s3-not-found.exception';
 
+const { INPUT_BUCKET = '', OUTPUT_BUCKET = '' } = process.env;
+
 @Injectable()
 export class StorageService {
   private getS3() {
@@ -14,7 +16,7 @@ export class StorageService {
     const s3 = this.getS3();
     const extension = mediaType === MediaTypesEnum.AUDIO ? '.mp3' : '.mp4';
     return s3.getSignedUrl('putObject', {
-      Bucket: process.env.INPUT_BUCKET,
+      Bucket: INPUT_BUCKET,
       Key: `${mediaType}/${key + extension}`,
       Expires: 3600,
     });
@@ -26,7 +28,7 @@ export class StorageService {
     return new Promise((resolve, reject) => {
       s3.getObject(
         {
-          Bucket: bucket || (process.env.INPUT_BUCKET as string),
+          Bucket: bucket || INPUT_BUCKET,
           Key: `${mediaType}/${key + extension}`,
         },
         (err, data) => {
@@ -60,7 +62,7 @@ export class StorageService {
     return new Promise<void>((resolve, reject) => {
       s3.putObject(
         {
-          Bucket: process.env.OUTPUT_BUCKET as string,
+          Bucket: OUTPUT_BUCKET,
           Key: `${mediaType}/${key + extension}`,
           Body: body,
           ContentType: contentType,

@@ -1,14 +1,14 @@
 service: outil
 
 plugins:
-  - 'serverless-plugin-typescript'
+  - serverless-plugin-typescript
   - serverless-plugin-optimize
   - serverless-offline
 
 provider:
   name: aws
   runtime: nodejs14.x
-  region: ca-central-1
+  region: ${self:custom.region}
   iam:
     role:
       statements:
@@ -31,6 +31,14 @@ provider:
           Action:
             - s3:ListBucket
           Resource: 'arn:aws:s3:::${self:custom.outputBucket}'
+        - Effect: Allow
+          Action:
+            - sqs:SendMessage
+          Resource: ${self:custom.deleteObjectsFromS3Queue.arn}
+  environment:
+    INPUT_BUCKET: ${self:custom.inputBucket}
+    OUTPUT_BUCKET: ${self:custom.outputBucket}
+    DELETE_OBJECTS_FROM_S3_QUEUE_URL: ${self:custom.deleteObjectsFromS3Queue.url}
 
 functions:
   main:
@@ -40,7 +48,7 @@ functions:
           method: any
           path: /{any+}
     layers:
-      - !Sub arn:aws:lambda:ca-central-1:${AWS::AccountId}:layer:ffmpeg:1
+      - !Sub arn:aws:lambda:${self:custom.region}:${AWS::AccountId}:layer:ffmpeg:1
   listStorage:
     handler: src/lambda-list-storage.handler
     events:
@@ -56,7 +64,16 @@ resources:
       Type: AWS::S3::Bucket
       Properties:
         BucketName: ${self:custom.outputBucket}
+    DeleteObjectsFromS3Queue:
+      Type: AWS::SQS::Queue
+      Properties:
+        QueueName: ${self:custom.deleteObjectsFromS3Queue.name}
 
 custom:
+  region: ca-central-1
   inputBucket: ${file(env.yml):INPUT_BUCKET}-${opt:stage, 'dev'}
   outputBucket: ${file(env.yml):OUTPUT_BUCKET}-${opt:stage, 'dev'}
+  deleteObjectsFromS3Queue:
+    name: ${file(env.yml):DELETE_OBJECTS_FROM_S3_QUEUE}-${opt:stage, 'dev'}
+    arn: !GetAtt DeleteObjectsFromS3Queue.Arn
+    url: !Ref DeleteObjectsFromS3Queue

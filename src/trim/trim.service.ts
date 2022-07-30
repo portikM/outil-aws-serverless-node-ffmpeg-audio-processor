@@ -11,6 +11,8 @@ import { promises as fs } from 'fs';
 const { spawnSync } = require('child_process');
 import { S3NotFoundException } from '../common/s3-not-found.exception';
 
+const { OUTPUT_BUCKET = '' } = process.env;
+
 @Injectable()
 export class TrimService {
   constructor(private storageService: StorageService) {}
@@ -86,6 +88,6 @@ export class TrimService {
       outputFile,
     );
 
-    return `https://${process.env.OUTPUT_BUCKET}.s3.ca-central-1.amazonaws.com/audio/${trimAudioDto.key}.mp3`;
+    return `https://${OUTPUT_BUCKET}.s3.ca-central-1.amazonaws.com/audio/${trimAudioDto.key}.mp3`;
   }
 }
